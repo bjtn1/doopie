@@ -11,6 +11,28 @@ use walkdir::WalkDir;
 use clap::{arg, command, value_parser, ArgAction, Command};
 use std::fs::metadata;
 
+
+fn main() {
+    let matches = Command::new("Doopie")
+        .version("1.0")
+        .author("Brandon Jose Tenorio Noguera <bjtnoguera@gmail.com>")
+        .about("Doopie is a command line tool to find duplicate files in a directory")
+        .arg(arg!(--directory <PATH>).required(true))
+        .arg(arg!(--ignore <FILE>).required(false))
+        .arg(arg!(--regex <STRING>).required(false))
+        .get_matches();
+
+
+    let directory: String = matches.get_one::<String>("directory")
+        .expect("required")
+        .to_string();
+
+    let _ = cd(&directory);
+
+    let files = get_files_in_pwd();
+}
+
+
 /// Computes the sha256 of a file
 fn compute_sha_256(file: &str) -> Result<String> {
     let mut file = File::open(file)?;
@@ -62,25 +84,4 @@ fn pwd() -> std::io::Result<()> {
 fn cd(root: &str) {
     let root = Path::new(root);
     assert!(env::set_current_dir(&root).is_ok());
-}
-
-
-fn main() {
-    let matches = Command::new("Doopie")
-        .version("1.0")
-        .author("Brandon Jose Tenorio Noguera <bjtnoguera@gmail.com>")
-        .about("Doopie is a command line tool to find duplicate files in a directory")
-        .arg(arg!(--directory <PATH>).required(true))
-        .arg(arg!(--ignore <FILE>).required(false))
-        .arg(arg!(--regex <STRING>).required(false))
-        .get_matches();
-
-
-    let directory: String = matches.get_one::<String>("directory")
-        .expect("required")
-        .to_string();
-
-    let _ = cd(&directory);
-
-    let files = get_files_in_pwd();
 }
