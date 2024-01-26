@@ -15,7 +15,7 @@ use std::fs::metadata;
 fn main() {
     let matches = Command::new("Doopie")
         .version("1.0")
-        .author("Brandon Jose Tenorio Noguera <bjtnoguera@gmail.com>")
+        .author("Brandon Jose Tenorio Noguera <bjtnoguera+doopie@gmail.com>")
         .about("Doopie is a command line tool to find duplicate files in a directory")
         .arg(arg!(--directory <PATH>).required(true))
         .arg(arg!(--ignore <FILE>).required(false))
@@ -33,7 +33,15 @@ fn main() {
 }
 
 
-/// Computes the sha256 of a file
+/// Returns a hashmap where...
+/// the key is the sha256 hex digest of a file
+/// the value is a Vec<path::PathBuf> of files who have the exact same sha256 hex digest
+fn get_sha_256_hashmap(files: &Vec<path::PathBuf>) {
+    // TODO
+}
+
+
+/// Returns the sha256 hex digest of a file
 fn compute_sha_256(file: &str) -> Result<String> {
     let mut file = File::open(file)?;
 
