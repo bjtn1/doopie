@@ -133,7 +133,7 @@ def find_dupes(path):
             [f"Size of duplicate files",   format_size(duplicate_files_size)],
         ]
 
-        print(f"\n{YELLOW}Report of scanning {BOLD_PURPLE}{path}{END}\n")
+        print(f"\n{YELLOW}Report of scanning {BOLD_PURPLE}{path}{END}")
         print(tabulate(table, tablefmt="fancy_grid"))
 
         """
