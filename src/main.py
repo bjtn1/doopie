@@ -5,6 +5,7 @@ import hashlib
 import os
 from collections import defaultdict
 from tabulate import tabulate
+from alive_progress import alive_bar
 
 
 # source https://gist.githubusercontent.com/rene-d/9e584a7dd2935d0f461904b9f2950007/raw/e2e58ccf955475d8066338a4e538c52debc06a06/colors.py
@@ -56,9 +57,9 @@ def find_dupes(path):
         for current_path, _, files_in_current_path in os.walk(path):
             # if "originals" in current_path:
             #     continue
+            total_files_in_path += len(files_in_current_path)
 
             for file in files_in_current_path:
-                total_files_in_path += 1
                 full_path_to_file = os.path.join(current_path, file)
                 # print(f"Sizing {full_path_to_file}...")
 
