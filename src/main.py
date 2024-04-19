@@ -55,17 +55,11 @@ def find_dupes(path):
 
         We do it this way because it is possible for two completely different files to have the exact same size
         """
-        with alive_bar(title=f"{BOLD}Sizing files\t\t{END}") as bar:
-            # TODO add functionality to skip regex patterns from a .ignore file or a regex pattern
-            # TODO if we don't have the rights to read nor obtain the size of a file, we should skip it
-            for _, _, files in os.walk(path):
-                total_files_in_path += len(files)
-                bar()
-
-
         with alive_bar(title=f"{BOLD}Scanning files\t\t{END}") as bar:
             for current_path, _, files_in_current_path in os.walk(path):
+                total_files_in_path += len(files_in_current_path)
                 # TODO add functionality to skip regex patterns from a .ignore file or a regex pattern
+                # TODO if we don't have the rights to read nor obtain the size of a file, we should skip it
 
                 for file in files_in_current_path:
                     full_path_to_file = os.path.join(current_path, file)
