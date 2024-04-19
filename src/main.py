@@ -60,9 +60,10 @@ def find_dupes(path):
             # TODO if we don't have the rights to read nor obtain the size of a file, we should skip it
             for _, _, files in os.walk(path):
                 total_files_in_path += len(files)
+                bar()
 
 
-        with alive_bar(total_files_in_path, title=f"{BOLD}Scanning files\t\t{END}") as bar:
+        with alive_bar(title=f"{BOLD}Scanning files\t\t{END}") as bar:
             for current_path, _, files_in_current_path in os.walk(path):
                 # TODO add functionality to skip regex patterns from a .ignore file or a regex pattern
 
@@ -83,7 +84,7 @@ def find_dupes(path):
         to unique_files list
         If the list size is greater than one, we compute the file has for every file within the list and add it to hash_dict[file_hash]
         """
-        with alive_bar(total_files_in_path, title=f"{BOLD}Hashing files\t\t{END}") as bar:
+        with alive_bar(title=f"{BOLD}Hashing files\t\t{END}") as bar:
             for file_list in size_dict.values():
                 if len(file_list) == 1:
                     # We do file_list[0] because we know that there is only one item in this list
@@ -107,7 +108,7 @@ def find_dupes(path):
         If the size of the list == 1, we add it to unique_files
         Otherwise, we can be certain that the files in the list are duplicates, so we can flatten the list and add every file to duplicate_files
         """
-        with alive_bar(len(hash_dict.values()), title=f"{BOLD}Finding duplicates{END}\t") as bar:
+        with alive_bar(title=f"{BOLD}Finding duplicates{END}\t") as bar:
             for file_list in hash_dict.values():
                 if len(file_list) == 1:
                     unique_files.append(file_list[0])
@@ -135,7 +136,7 @@ def find_dupes(path):
         with open("duplicate_files.txt", "w") as output_file:
             output_file.write("")
 
-        with alive_bar(len(duplicate_files), title=f"{BOLD}Writing to output file{END}\t") as bar:
+        with alive_bar(title=f"{BOLD}Writing to output file{END}\t") as bar:
             for file in duplicate_files:
                 with open("duplicate_files.txt", "a") as output_file:
                     output_file.write(file + "\n")
