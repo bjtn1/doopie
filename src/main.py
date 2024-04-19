@@ -81,6 +81,11 @@ def find_dupes(path):
                         total_skipped_files += 1
                         continue
 
+                    # Skip ports too I guess LOL
+                    if stat.S_ISSOCK(file_permissions):
+                        total_skipped_files += 1
+                        continue
+
 
                     file_size = os.stat(full_path_to_file).st_size
                     total_path_size += file_size
