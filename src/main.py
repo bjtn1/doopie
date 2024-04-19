@@ -6,7 +6,7 @@ import os
 from collections import defaultdict
 from tabulate import tabulate
 from alive_progress import alive_bar
-
+import time
 
 # source https://gist.githubusercontent.com/rene-d/9e584a7dd2935d0f461904b9f2950007/raw/e2e58ccf955475d8066338a4e538c52debc06a06/colors.py
 """ ANSI color codes """
@@ -38,6 +38,7 @@ END             = "\033[0m"
 
 def find_dupes(path):
     try:
+        start_time = time.time()
         total_files_in_path = 0
         total_path_size = 0
 
@@ -54,22 +55,26 @@ def find_dupes(path):
 
         We do it this way because it is possible for two completely different files to have the exact same size
         """
-        for current_path, _, files_in_current_path in os.walk(path):
-            # if "originals" in current_path:
-            #     continue
-            total_files_in_path += len(files_in_current_path)
+        with alive_bar(title=f"{BOLD}Sizing files\t\t{END}") as bar:
+            # TODO add functionality to skip regex patterns from a .ignore file or a regex pattern
+            # TODO if we don't have the rights to read nor obtain the size of a file, we should skip it
+            for _, _, files in os.walk(path):
+                total_files_in_path += len(files)
 
-            for file in files_in_current_path:
-                full_path_to_file = os.path.join(current_path, file)
-                # print(f"Sizing {full_path_to_file}...")
 
-                if not os.path.exists(full_path_to_file):
-                    # print(f"{file} does not exist")
-                    continue
+        with alive_bar(total_files_in_path, title=f"{BOLD}Scanning files\t\t{END}") as bar:
+            for current_path, _, files_in_current_path in os.walk(path):
+                # TODO add functionality to skip regex patterns from a .ignore file or a regex pattern
 
-                file_size = os.path.getsize(full_path_to_file)
-                total_path_size += file_size
-                size_dict[file_size].append(full_path_to_file)
+                for file in files_in_current_path:
+                    full_path_to_file = os.path.join(current_path, file)
+                    if not os.path.exists(full_path_to_file):
+                        continue
+
+                    file_size = os.path.getsize(full_path_to_file)
+                    total_path_size += file_size
+                    size_dict[file_size].append(full_path_to_file)
+                    bar()
         
 
         """
@@ -78,20 +83,22 @@ def find_dupes(path):
         to unique_files list
         If the list size is greater than one, we compute the file has for every file within the list and add it to hash_dict[file_hash]
         """
-        for file_list in size_dict.values():
-            if len(file_list) == 1:
-                # We do file_list[0] because we know that there is only one item in this list
-                unique_files.append(file_list[0])
-            else:
-                for file in file_list:
-                    try:
-                        with open(file, "rb") as file_object:
-                            file_hash = hashlib.sha256(file_object.read()).hexdigest()
-                            hash_dict[file_hash].append(file)
-                        # print(f"Hashing {file}...")
-                    
-                    except (PermissionError, IsADirectoryError) as e:
-                        print(f"Error processing file {file}: {e}")
+        with alive_bar(total_files_in_path, title=f"{BOLD}Hashing files\t\t{END}") as bar:
+            for file_list in size_dict.values():
+                if len(file_list) == 1:
+                    # We do file_list[0] because we know that there is only one item in this list
+                    unique_files.append(file_list[0])
+                    bar()
+                else:
+                    for file in file_list:
+                        try:
+                            with open(file, "rb") as file_object:
+                                file_hash = hashlib.sha256(file_object.read()).hexdigest()
+                                hash_dict[file_hash].append(file)
+                            bar()
+                        
+                        except (PermissionError, IsADirectoryError) as e:
+                            print(f"Error processing file {file}: {e}")
 
 
         """
@@ -100,12 +107,14 @@ def find_dupes(path):
         If the size of the list == 1, we add it to unique_files
         Otherwise, we can be certain that the files in the list are duplicates, so we can flatten the list and add every file to duplicate_files
         """
-        for file_list in hash_dict.values():
-            if len(file_list) == 1:
-                unique_files.append(file_list[0])
-            else:
-                for file in file_list:
-                    duplicate_files.append(file)
+        with alive_bar(len(hash_dict.values()), title=f"{BOLD}Finding duplicates{END}\t") as bar:
+            for file_list in hash_dict.values():
+                if len(file_list) == 1:
+                    unique_files.append(file_list[0])
+                else:
+                    for file in file_list:
+                        duplicate_files.append(file)
+                bar()
 
         unique_files_size = 0
         for file in unique_files:
@@ -120,41 +129,43 @@ def find_dupes(path):
             duplicate_files_size += os.path.getsize(file)
 
         """
+        Write duplicate_files to a file called `duplicate_files.txt` found in the current directory
+        """
+        # Create and clear the file before appending to it
+        with open("duplicate_files.txt", "w") as output_file:
+            output_file.write("")
+
+        with alive_bar(len(duplicate_files), title=f"{BOLD}Writing to output file{END}\t") as bar:
+            for file in duplicate_files:
+                with open("duplicate_files.txt", "a") as output_file:
+                    output_file.write(file + "\n")
+                bar()
+
+        end_time = time.time()
+        elapsed_time = end_time - start_time
+
+        print(f"\n{BOLD}{os.path.abspath("./duplicate_files.txt")}{END} was successfully written")
+
+        """
         Print out info about what we just did
         """
         def format_size(size):
-            return f"{BOLD_BLUE}{size:_} {BOLD_GREEN}bytes{END}"
+            return f"{BOLD}{size:_} {END}bytes{END}"
 
         table = [
-            [f"Number of files",           f"{BOLD_BLUE}{total_files_in_path}{END}"],
+            [f"Number of files",           f"{BOLD}{total_files_in_path}{END}"],
             [f"Size of files",             format_size(total_path_size)],
-            [f"Number of unique files",    f"{YELLOW}{len(unique_files)}{END}"],
+            [f"Number of unique files",    f"{BOLD}{len(unique_files)}{END}"],
             [f"Size of unique files",      format_size(unique_files_size)],
-            [f"Number of duplicate files", f"{BOLD_RED}{len(duplicate_files)}{END}"],
+            [f"Number of duplicate files", f"{BOLD}{len(duplicate_files)}{END}"],
             [f"Size of duplicate files",   format_size(duplicate_files_size)],
+            [f"Time elapsed", f"{BOLD}{elapsed_time:.2f}{END} seconds"]
         ]
 
-        print(f"\n{YELLOW}Report of scanning {BOLD_PURPLE}{path}{END}")
         print(tabulate(table, tablefmt="fancy_grid"))
-
-        """
-        Write duplicate_files to a file called `duplicate_files.txt` found in the `path` directory
-        """
-        duplicate_files_text_file_path = os.path.join(path, "duplicate_files.txt")
-        # Create and clear the file before appending to it
-        with open(duplicate_files_text_file_path, "w") as output_file:
-            output_file.write("")
-
-        for file in duplicate_files:
-            with open(duplicate_files_text_file_path, "a") as output_file:
-                output_file.write(file + "\n")
-
-        print(f"\n{BOLD_BLUE}{duplicate_files_text_file_path}{END}{BOLD_GREEN} was successfully written{END}")
-
 
     except Exception as e:
         print(f"An error occurred: {e}")
-
 
 
 def main():
@@ -173,9 +184,5 @@ def main():
     find_dupes(full_directory)
 
 
-
 if __name__ == "__main__":
     main()
-
-
-
