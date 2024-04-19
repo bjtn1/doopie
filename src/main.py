@@ -58,10 +58,11 @@ def find_dupes(path):
         with alive_bar(title=f"{BOLD}Scanning files\t\t{END}") as bar:
             for current_path, _, files_in_current_path in os.walk(path):
                 total_files_in_path += len(files_in_current_path)
-                # TODO add functionality to skip regex patterns from a .ignore file or a regex pattern
-                # TODO if we don't have the rights to read nor obtain the size of a file, we should skip it
 
                 for file in files_in_current_path:
+                    # TODO add functionality to skip regex patterns from a .ignore file or a regex pattern
+                    # TODO if we don't have the rights to read nor obtain the size of a file, we should skip it
+
                     full_path_to_file = os.path.join(current_path, file)
                     if not os.path.exists(full_path_to_file):
                         continue
