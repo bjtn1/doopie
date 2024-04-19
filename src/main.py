@@ -7,6 +7,7 @@ from collections import defaultdict
 from tabulate import tabulate
 from alive_progress import alive_bar
 import time
+import stat
 
 # source https://gist.githubusercontent.com/rene-d/9e584a7dd2935d0f461904b9f2950007/raw/e2e58ccf955475d8066338a4e538c52debc06a06/colors.py
 """ ANSI color codes """
@@ -36,11 +37,17 @@ CROSSED         = "\033[9m"
 END             = "\033[0m"
 
 
+
+def file_has_read_permissions(file_mode):
+    return stat.S_IRUSR & file_mode
+
+
 def find_dupes(path):
     try:
         start_time = time.time()
         total_files_in_path = 0
         total_path_size = 0
+        total_skipped_files = 0
 
         unique_files = []
         duplicate_files = []
@@ -60,17 +67,24 @@ def find_dupes(path):
                 total_files_in_path += len(files_in_current_path)
 
                 for file in files_in_current_path:
+                    bar()
                     # TODO add functionality to skip regex patterns from a .ignore file or a regex pattern
-                    # TODO if we don't have the rights to read nor obtain the size of a file, we should skip it
 
                     full_path_to_file = os.path.join(current_path, file)
                     if not os.path.exists(full_path_to_file):
                         continue
 
-                    file_size = os.path.getsize(full_path_to_file)
+                    # If we don't have the rights to read a file, we should skip it
+                    file_permissions = os.stat(full_path_to_file).st_mode
+
+                    if not file_has_read_permissions(file_permissions):
+                        total_skipped_files += 1
+                        continue
+
+
+                    file_size = os.stat(full_path_to_file).st_size
                     total_path_size += file_size
                     size_dict[file_size].append(full_path_to_file)
-                    bar()
         
 
         """
@@ -149,13 +163,14 @@ def find_dupes(path):
             return f"{BOLD}{size:_} {END}bytes{END}"
 
         table = [
-            [f"Number of files",           f"{BOLD}{total_files_in_path}{END}"],
-            [f"Size of files",             format_size(total_path_size)],
-            [f"Number of unique files",    f"{BOLD}{len(unique_files)}{END}"],
-            [f"Size of unique files",      format_size(unique_files_size)],
-            [f"Number of duplicate files", f"{BOLD}{len(duplicate_files)}{END}"],
-            [f"Size of duplicate files",   format_size(duplicate_files_size)],
-            [f"Time elapsed", f"{BOLD}{elapsed_time:.2f}{END} seconds"]
+            [f"Total number of files",           f"{BOLD}{total_files_in_path}{END}"],
+            [f"Total number of unique files",    f"{BOLD}{len(unique_files)}{END}"],
+            [f"Total number of duplicate files", f"{BOLD}{len(duplicate_files)}{END}"],
+            [f"Total number of skipped files",   total_skipped_files],
+            [f"Total size of files",             format_size(total_path_size)],
+            [f"Total size of unique files",      format_size(unique_files_size)],
+            [f"Total size of duplicate files",   format_size(duplicate_files_size)],
+            [f"Total time elapsed", f"{BOLD}{elapsed_time:.2f}{END} seconds"],
         ]
 
         print(tabulate(table, tablefmt="fancy_grid"))
