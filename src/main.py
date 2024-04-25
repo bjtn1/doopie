@@ -40,7 +40,7 @@ def find_dupes(path):
 
         We do it this way because it is possible for two completely different files to have the exact same size
         """
-        with alive_bar(title=f"{BOLD}Scanning files\t\t{END}") as bar:
+        with alive_bar(title=f"{BOLD}Scanning files\t\t\t\t{END}") as bar:
             for current_path, _, files_in_current_path in os.walk(path):
                 total_files_in_path += len(files_in_current_path)
 
@@ -76,7 +76,7 @@ def find_dupes(path):
         to unique_files list
         If the list size is greater than one, we compute the file has for every file within the list and add it to hash_dict[file_hash]
         """
-        with alive_bar(title=f"{BOLD}Hashing files\t\t{END}") as bar:
+        with alive_bar(title=f"{BOLD}Hashing files\t\t\t\t{END}") as bar:
             for file_list in size_dict.values():
                 if len(file_list) == 1:
                     # We do file_list[0] because we know that there is only one item in this list
@@ -93,7 +93,7 @@ def find_dupes(path):
                             bar()
                         
                         except (PermissionError) as e:
-                            print(f"Skipping {file}, {e}...")
+                            print(f"{e}, skipping...")
                             total_skipped_files += 1
                             continue
 
@@ -104,7 +104,7 @@ def find_dupes(path):
         If the size of the list == 1, we add it to unique_files
         Otherwise, we can be certain that the files in the list are duplicates, so we can flatten the list and add every file to duplicate_files
         """
-        with alive_bar(title=f"{BOLD}Finding duplicates{END}\t") as bar:
+        with alive_bar(title=f"{BOLD}Finding duplicates{END}\t\t\t") as bar:
             for file_list in hash_dict.values():
                 if len(file_list) == 1:
                     unique_files.append(file_list[0])
@@ -114,16 +114,18 @@ def find_dupes(path):
                 bar()
 
         unique_files_size = 0
-        for file in unique_files:
-            if not os.path.exists(file):
-                continue
-            unique_files_size += os.path.getsize(file)
+        with alive_bar(title=f"{BOLD}Counting number of unique files{END}\t\t") as bar:
+            for file in unique_files:
+                if not os.path.exists(file):
+                    continue
+                unique_files_size += os.path.getsize(file)
 
         duplicate_files_size = 0
-        for file in duplicate_files:
-            if not os.path.exists(file):
-                continue
-            duplicate_files_size += os.path.getsize(file)
+        with alive_bar(title=f"{BOLD}Counting number of duplicate files{END}\t") as bar:
+            for file in duplicate_files:
+                if not os.path.exists(file):
+                    continue
+                duplicate_files_size += os.path.getsize(file)
 
         """
         Write duplicate_files to a file called `duplicate_files.txt` found in the current directory
@@ -132,7 +134,7 @@ def find_dupes(path):
         with open("duplicate_files.txt", "w") as output_file:
             output_file.write("")
 
-        with alive_bar(title=f"{BOLD}Writing to output file{END}\t") as bar:
+        with alive_bar(title=f"{BOLD}Writing to output file{END}\t\t\t") as bar:
             for file in duplicate_files:
                 with open("duplicate_files.txt", "a") as output_file:
                     output_file.write(file + "\n")
