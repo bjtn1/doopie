@@ -1,4 +1,4 @@
-read_permissions_denied.txt
+read_permission_denied.txt
 duplicate_files.txt
 
 # Created by https://www.toptal.com/developers/gitignore/api/python,macos,virtualenv
