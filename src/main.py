@@ -3,39 +3,17 @@
 import argparse
 import hashlib
 import os
-from collections import defaultdict
-from tabulate import tabulate
-from alive_progress import alive_bar
-import time
 import stat
+import time
+from collections import defaultdict
+
+from alive_progress import alive_bar
+from tabulate import tabulate
 
 # source https://gist.githubusercontent.com/rene-d/9e584a7dd2935d0f461904b9f2950007/raw/e2e58ccf955475d8066338a4e538c52debc06a06/colors.py
 """ ANSI color codes """
-BLACK           = "\033[0;30m"
-RED             = "\033[0;31m"
-GREEN           = "\033[0;32m"
-BROWN           = "\033[0;33m"
-BLUE            = "\033[0;34m"
-PURPLE          = "\033[0;35m"
-CYAN            = "\033[0;36m"
-LIGHT_GRAY      = "\033[0;37m"
-DARK_GRAY       = "\033[1;30m"
-YELLOW          = "\033[1;33m"
-BOLD_RED        = "\033[1;31m"
-BOLD_GREEN      = "\033[1;32m"
-BOLD_BLUE       = "\033[1;34m"
-BOLD_PURPLE     = "\033[1;35m"
-BOLD_CYAN       = "\033[1;36m"
-BOLD_WHITE      = "\033[1;37m"
 BOLD            = "\033[1m"
-FAINT           = "\033[2m"
-ITALIC          = "\033[3m"
-UNDERLINE       = "\033[4m"
-BLINK           = "\033[5m"
-NEGATIVE        = "\033[7m"
-CROSSED         = "\033[9m"
 END             = "\033[0m"
-
 
 
 def file_has_read_permissions(file_mode):
@@ -81,7 +59,7 @@ def find_dupes(path):
                         total_skipped_files += 1
                         continue
 
-                    # Skip ports too I guess LOL
+                    # Skip socksets too I guess LOL
                     if stat.S_ISSOCK(file_permissions):
                         total_skipped_files += 1
                         continue
@@ -106,14 +84,18 @@ def find_dupes(path):
                     bar()
                 else:
                     for file in file_list:
+                        if not os.path.exists(file):
+                            continue
                         try:
                             with open(file, "rb") as file_object:
                                 file_hash = hashlib.sha256(file_object.read()).hexdigest()
                                 hash_dict[file_hash].append(file)
                             bar()
                         
-                        except (PermissionError, IsADirectoryError) as e:
-                            print(f"Error processing file {file}: {e}")
+                        except (PermissionError) as e:
+                            print(f"Skipping {file}, {e}...")
+                            total_skipped_files += 1
+                            continue
 
 
         """
@@ -156,25 +138,25 @@ def find_dupes(path):
                     output_file.write(file + "\n")
                 bar()
 
-        end_time = time.time()
-        elapsed_time = end_time - start_time
+        elapsed_time = time.time() - start_time
 
         print(f"\n{BOLD}{os.path.abspath("./duplicate_files.txt")}{END} was successfully written")
 
         """
         Print out info about what we just did
         """
-        def format_size(size):
-            return f"{BOLD}{size:_} {END}bytes{END}"
+        def format_num(size):
+            return f"{BOLD}{size:_}{END}"
 
         table = [
-            [f"Total number of files",           f"{BOLD}{total_files_in_path}{END}"],
-            [f"Total number of unique files",    f"{BOLD}{len(unique_files)}{END}"],
-            [f"Total number of duplicate files", f"{BOLD}{len(duplicate_files)}{END}"],
-            [f"Total number of skipped files",   total_skipped_files],
-            [f"Total size of files",             format_size(total_path_size)],
-            [f"Total size of unique files",      format_size(unique_files_size)],
-            [f"Total size of duplicate files",   format_size(duplicate_files_size)],
+            [f"Total number of files",           format_num(total_files_in_path)],
+            [f"Total number of unique files",    format_num(len(unique_files))],
+            [f"Total number of duplicate files", format_num(len(duplicate_files))],
+            [f"Total number of skipped files",   format_num(total_skipped_files)],
+
+            [f"Total size of files",             f"{format_num(total_path_size)} bytes"],
+            [f"Total size of unique files",      f"{format_num(unique_files_size)} bytes"],
+            [f"Total size of duplicate files",   f"{format_num(duplicate_files_size)} bytes"],
             [f"Total time elapsed", f"{BOLD}{elapsed_time:.2f}{END} seconds"],
         ]
 
