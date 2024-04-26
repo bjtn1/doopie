@@ -3,6 +3,7 @@
 import argparse
 import hashlib
 import os
+import re
 import stat
 import time
 from collections import defaultdict
@@ -20,7 +21,7 @@ def file_has_read_permissions(file_mode):
     return stat.S_IRUSR & file_mode
 
 
-def find_dupes(path):
+def find_dupes(path, ignore_list=None, ignore_file=None):
     try:
         start_time = time.time()
         total_files_in_path = 0
@@ -46,11 +47,17 @@ def find_dupes(path):
 
                 for file in files_in_current_path:
                     bar()
-                    # TODO add functionality to skip regex patterns from a .ignore file or a regex pattern
 
                     full_path_to_file = os.path.join(current_path, file)
                     if not os.path.exists(full_path_to_file):
                         continue
+
+                    # TODO skip words in ignore list that begin with `!` like `!py` = "DO NOT SKIP py"
+                    # Check if the file path contains any word from the ignore_list, then skip it if true
+                    if ignore_list:
+                        if any(word in full_path_to_file for word in ignore_list):
+                            total_skipped_files += 1
+                            continue
 
                     # If we don't have the rights to read a file, we should skip it
                     file_permissions = os.stat(full_path_to_file).st_mode
@@ -174,14 +181,20 @@ def main():
                         description="A script that finds duplicate files in a given directory")
 
     parser.add_argument("directory")
-    parser.add_argument("-r", "--regex")
-    parser.add_argument("-i", "--ignore")
+
+    parser.add_argument("-i",
+                        "--ignore",
+                        nargs="+",)
+
+    parser.add_argument("-f",
+                        "--ignore-file",)
 
     args = parser.parse_args()
+    ignore_list = args.ignore
 
     full_directory = os.path.abspath(args.directory)
 
-    find_dupes(full_directory)
+    find_dupes(full_directory, ignore_list)
 
 
 if __name__ == "__main__":
