@@ -3,7 +3,6 @@
 import argparse
 import hashlib
 import os
-import re
 import stat
 import time
 from collections import defaultdict
@@ -34,6 +33,15 @@ def find_dupes(path, ignore_list=None, ignore_file=None):
         size_dict = defaultdict(list)
         hash_dict = defaultdict(list)
 
+        # Extend ignore_list by reading each line in ignore_file and adding each word in each line to ignore_list
+        if ignore_file:
+            if ignore_list is None:
+                ignore_list = []
+                # TODO add alive_progress to this
+            with open(ignore_file, 'r') as file:
+                for line in file:
+                    ignore_list.extend(line.strip().split())
+
         """
         This walks every directory inside of `path` and looks at every file within every directory
         We first get the full path of every file
@@ -53,6 +61,7 @@ def find_dupes(path, ignore_list=None, ignore_file=None):
                         continue
 
                     # TODO skip words in ignore list that begin with `!` like `!py` = "DO NOT SKIP py"
+
                     # Check if the file path contains any word from the ignore_list, then skip it if true
                     if ignore_list:
                         if any(word in full_path_to_file for word in ignore_list):
