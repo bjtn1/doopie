@@ -144,21 +144,22 @@ def find_dupes(path, ignore_list=None, ignore_file=None):
                 duplicate_files_size += os.path.getsize(file)
 
         """
-        Write duplicate_files to a file called `duplicate_files.txt` found in the current directory
+        Write duplicate_files to a file called `duplicate_files.txt` found in `path`
         """
         # Create and clear the file before appending to it
-        with open("duplicate_files.txt", "w") as output_file:
+        duplicate_files_txt = os.path.join(path, "duplicate_files.txt")
+        with open(duplicate_files_txt, "w") as output_file:
             output_file.write("")
 
         with alive_bar(title=f"{BOLD}Writing to output file{END}\t\t\t") as bar:
             for file in duplicate_files:
-                with open("duplicate_files.txt", "a") as output_file:
+                with open(duplicate_files_txt, "a") as output_file:
                     output_file.write(file + "\n")
                 bar()
 
         elapsed_time = time.time() - start_time
 
-        print(f"\n{BOLD}{os.path.abspath("./duplicate_files.txt")}{END} was successfully written")
+        print(f"\n{BOLD}{os.path.abspath(duplicate_files_txt)}{END} was successfully written")
 
         """
         Print out info about what we just did
